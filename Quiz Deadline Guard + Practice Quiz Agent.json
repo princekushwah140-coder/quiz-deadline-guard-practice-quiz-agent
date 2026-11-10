@@ -1,0 +1,507 @@
+{
+  "name": "Quiz Deadline Guard + Practice Quiz Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## Quiz Deadline Guard (Free)\n\n**Setup (5 min):**\n1. Gemini: get a free key at aistudio.google.com, add it in both Gemini nodes.\n2. Connect Gmail + Google Calendar (OAuth) once.\n3. Replace `YOUR_EMAIL@gmail.com` in the 3 email nodes.\n4. Activate the workflow.\n\n**Flow A:** every morning, scans Gmail + Calendar for quizzes/deadlines and emails you a digest.\n**Flow B:** open Chat, say a topic, get a practice quiz (emailed on request).",
+        "height": 300,
+        "width": 420,
+        "color": 3
+      },
+      "id": "79bae8e5-f49d-4dab-8f05-2d316260570b",
+      "name": "Setup Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1952,
+        64
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "id": "2085b5b2-f02d-45e4-b45c-b9b6d5649468",
+      "name": "Every Morning 8AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -1552,
+        384
+      ],
+      "typeVersion": 1.2
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 15,
+        "filters": {
+          "q": "newer_than:1d (quiz OR test OR assessment OR assignment OR \"last date\" OR deadline)"
+        }
+      },
+      "id": "d51b76ba-9de6-402e-923a-b26cd3a7d1e0",
+      "name": "Find Quiz Emails",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        -1312,
+        304
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "3cc2ace3-6546-4a34-9af0-d466964e73f0",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "QLZyVaHvtXj0nZxs",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const mails = $input.all().map(i => {\n  const j = i.json;\n  return `From: ${j.From || ''}\\nSubject: ${j.Subject || ''}\\nSnippet: ${(j.snippet || '').slice(0, 500)}`;\n}).join('\\n---\\n');\nreturn [{ json: { mails } }];"
+      },
+      "id": "6e48f14f-d61e-41a6-8472-954b39e35389",
+      "name": "Build Email Digest Text",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -1072,
+        304
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Below are recent emails. List ONLY those announcing a quiz, test, assessment, or assignment deadline.\nFormat each as one line: Title | Date/Time | Link or platform.\nIf none are relevant, reply with exactly: NONE\n\nEmails:\n{{ $json.mails }}"
+      },
+      "id": "f7828887-3c56-4052-87d0-db3160876eb4",
+      "name": "Extract Quiz Details",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "position": [
+        -864,
+        304
+      ],
+      "typeVersion": 1.4,
+      "retryOnFail": true,
+      "maxTries": 3
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.8-flash",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "4b9f8b34-fb83-4d2f-992e-dfbb5cd3208c",
+      "name": "Gemini (Extract)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        -832,
+        512
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rfjFzAHVS5jw2vDV",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.text.trim() }}",
+              "rightValue": "NONE",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "3e2f14de-5030-4774-a075-25ca4591fda3",
+      "name": "Any Quizzes Found?",
+      "type": "n8n-nodes-base.if",
+      "position": [
+        -496,
+        304
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "sendTo": "princekushwah140@gmail.com",
+        "subject": "Quiz alert: upcoming quizzes/deadlines",
+        "emailType": "text",
+        "message": "=Upcoming quiz/deadline items from your inbox:\n\n{{ $json.text }}\n\nOpen each one and attempt it yourself before the deadline.",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "1bd773d9-d353-4c2d-a046-cd28c8fc7cef",
+      "name": "Email Me Quiz Alert",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        -256,
+        224
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "11905bc9-0719-4c57-9fe3-e9927a48f08d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "R5Wv89egduLj6izG",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "mode": "list",
+          "value": "primary"
+        },
+        "limit": 20,
+        "timeMin": "={{ $now.toISO() }}",
+        "timeMax": "={{ $now.plus({days:2}).toISO() }}",
+        "options": {
+          "query": "quiz"
+        }
+      },
+      "id": "8084539c-7b8f-4372-a99f-b2747a262d12",
+      "name": "Calendar Quizzes (48h)",
+      "type": "n8n-nodes-base.googleCalendar",
+      "position": [
+        -1312,
+        576
+      ],
+      "typeVersion": 1.3,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "ZwhrLga9cwaTaSbD",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const lines = $input.all().map(i => {\n  const j = i.json;\n  const s = j.start?.dateTime || j.start?.date || '';\n  return `${j.summary} | ${s}`;\n});\nreturn [{ json: { list: lines.join('\\n') } }];"
+      },
+      "id": "0591d95a-e38a-477f-89df-739ab2c6496d",
+      "name": "Format Calendar List",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -976,
+        576
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "sendTo": "YOUR_EMAIL@gmail.com",
+        "subject": "Calendar reminder: quizzes in next 48 hours",
+        "emailType": "text",
+        "message": "=Quizzes on your calendar in the next 48 hours:\n\n{{ $json.list }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "c79598a6-154f-4f06-b590-c3b714701211",
+      "name": "Email Me Calendar Reminder",
+      "type": "n8n-nodes-base.gmail",
+      "position": [
+        -720,
+        576
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "62818f4b-cf5b-4f39-b8c8-ac1bbd431f7b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "R5Wv89egduLj6izG",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Flow B: Practice Quiz Generator (chat)",
+        "height": 60,
+        "width": 700,
+        "color": 7
+      },
+      "id": "117c65cf-c12e-4b17-ad19-9dc8d956f2c1",
+      "name": "Flow B Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1296,
+        1696
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "id": "d8166b43-f998-429a-9805-2c85311775f3",
+      "name": "Practice Chat",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "position": [
+        -1296,
+        1792
+      ],
+      "webhookId": "b7c1f1a2-5d3e-4a9b-8c11-2f6e9d0a1b34",
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=You are a quiz tutor for a BCA student. Subjects: C++ OOP, DBMS, Operating Systems, DSA, Cloud, Embedded Systems.\n\nWhen the user gives a topic:\n1. Generate 10 MCQs (4 options each), mixed difficulty.\n2. After the questions, give an answer key with a one-line explanation per answer.\n3. Keep language simple and exam-oriented.\n\nIf the user asks to email the quiz, call the Send Quiz Email tool with the full quiz text.\nDo not answer questions that are part of a live graded exam; only practice material.\nWhen the user explicitly asks to email the generated quiz:\n- Call the Send Quiz Email tool.\n- Pass the complete quiz, including all 10 questions, four options per question, answer key, and explanations.\n- Do not ask the user to provide the email body.\n\nCurrent date: {{ $now }}"
+        }
+      },
+      "id": "c10a0208-8150-4111-a3e9-f47454afe977",
+      "name": "Quiz Practice Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "position": [
+        -1024,
+        1760
+      ],
+      "typeVersion": 2.2
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-3.1-flash-lite",
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "1d7e63d0-ee0a-44e4-965d-3e78ed80a01d",
+      "name": "Gemini (Agent)",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "position": [
+        -1296,
+        2016
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "rfjFzAHVS5jw2vDV",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "contextWindowLength": 20
+      },
+      "id": "343172a0-fefc-4691-8e4d-8c0302acbf3b",
+      "name": "Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "position": [
+        -960,
+        2016
+      ],
+      "typeVersion": 1.3
+    },
+    {
+      "parameters": {
+        "descriptionType": "manual",
+        "toolDescription": "Send a message in Gmail",
+        "sendTo": "YOUR_EMAIL@gmail.com",
+        "subject": "={{ $fromAI('emailSubject', 'A suitable subject for the generated practice quiz', 'string') }}",
+        "emailType": "text",
+        "message": "={{ $fromAI('emailBody', 'The complete generated quiz including all questions, four options per question, answer key, and explanations. Use the AI agent response.', 'string') }}",
+        "options": {}
+      },
+      "id": "c283a276-d355-4710-b8c0-befdc6e7186b",
+      "name": "Send Quiz Email",
+      "type": "n8n-nodes-base.gmailTool",
+      "position": [
+        -704,
+        2016
+      ],
+      "typeVersion": 2.1,
+      "webhookId": "400c1f28-8f30-4e42-ba75-77063285e536",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "R5Wv89egduLj6izG",
+          "name": "Gmail account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every Morning 8AM": {
+      "main": [
+        [
+          {
+            "node": "Find Quiz Emails",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Calendar Quizzes (48h)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Find Quiz Emails": {
+      "main": [
+        [
+          {
+            "node": "Build Email Digest Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Email Digest Text": {
+      "main": [
+        [
+          {
+            "node": "Extract Quiz Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini (Extract)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract Quiz Details",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Quiz Details": {
+      "main": [
+        [
+          {
+            "node": "Any Quizzes Found?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Any Quizzes Found?": {
+      "main": [
+        [
+          {
+            "node": "Email Me Quiz Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calendar Quizzes (48h)": {
+      "main": [
+        [
+          {
+            "node": "Format Calendar List",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Calendar List": {
+      "main": [
+        [
+          {
+            "node": "Email Me Calendar Reminder",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Practice Chat": {
+      "main": [
+        [
+          {
+            "node": "Quiz Practice Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini (Agent)": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Quiz Practice Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Quiz Practice Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Quiz Email": {
+      "ai_tool": [
+        [
+          {
+            "node": "Quiz Practice Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "timezone": "Indian/Christmas",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "22b7b092-e164-47e8-ad42-df63d3c9fa2d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "bded55b0c8aae409dea82358155b41e5b06c3cd7c5e8a269f8a8bd90fd45a53b"
+  },
+  "nodeGroups": [],
+  "id": "brfZDWkLGuIaDqv5",
+  "tags": []
+}
