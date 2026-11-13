@@ -220,43 +220,45 @@ The screenshots below document the workflow structure and example
 executions. Add the corresponding image files to the `screenshots/`
 directory.
 
+## 📸 Project Screenshots
+
 ### Quiz Deadline Guard
 
 **1. Complete workflow overview**
 
-![Quiz Deadline Guard workflow
-overview](screenshots/01-workflow-overview.png)
+![Quiz Deadline Guard workflow overview](./Screenshot%20%2823%29.png)
 
 **2. Gmail quiz email detection**
 
-![Gmail quiz email detection](screenshots/02-gmail-quiz-detection.png)
+![Gmail quiz email detection](./Screenshot%20%2825%29.png)
 
 **3. Gemini quiz detail extraction**
 
-![Gemini quiz detail
-extraction](screenshots/03-gemini-quiz-extraction.png)
+![Gemini quiz detail extraction](./Screenshot%20%2826%29.png)
 
 **4. Google Calendar reminder**
 
-![Google Calendar reminder](screenshots/04-calendar-reminder.png)
+![Google Calendar reminder](./Screenshot%20%2827%29.png)
+
+---
 
 ### Practice Quiz Agent
 
 **5. Practice Quiz Agent architecture**
 
-![Practice Quiz Agent
-architecture](screenshots/05-practice-agent-architecture.png)
+![Practice Quiz Agent architecture](./Screenshot%20%2828%29.png)
 
 **6. Generated practice quiz**
 
-![Generated practice quiz](screenshots/06-generated-practice-quiz.png)
+![Generated practice quiz](./Screenshot%20%2830%29.png)
 
 **7. Gmail quiz delivery**
 
-![Gmail quiz delivery](screenshots/07-gmail-quiz-delivery.png)
+![Gmail quiz delivery](./Screenshot%20%2832%29.png)
+
+---
 
 ## Getting Started
-
 ### Prerequisites
 
 Before importing the workflows, you need:
