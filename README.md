@@ -361,22 +361,12 @@ Email the complete quiz to my configured email address.
 The agent should generate the practice material and use its Gmail tool
 when email delivery is requested and correctly configured.
 
-## Security and Privacy
+🔐 Security & Privacy
 
-**Never commit secrets or personal data to GitHub.**
-
-Before uploading workflow JSON files:
-
--   Remove or replace API keys and access tokens.
--   Do not upload OAuth client secrets or credential exports.
--   Remove private email addresses where they are not needed.
--   Remove personal calendar event details and other private data.
--   Review node parameters and execution data for sensitive information.
--   Use your own credentials after importing the workflows.
-
-If a secret is accidentally committed, revoke or rotate it immediately.
-Deleting it from the latest version of a file may not remove it from Git
-history.
+API keys and authentication tokens are not included in this repository.
+Configure credentials securely within your own n8n instance.
+Do not upload private browser sessions, cookies, or personal information.
+Always use websites you are authorized to access.
 
 ## Limitations and Notes
 
